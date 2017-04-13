@@ -19,6 +19,11 @@
     font-weight: bold;
 }
 
+.y.axis.entropy {
+    font-size: .8em;
+    font-weight: normal;
+}
+
 /*styling for the lines representing the sequence for each sample*/
 .line {
     fill: none;
