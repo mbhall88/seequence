@@ -24,7 +24,9 @@ function parallelCoordinates() {
          x2 = d3.scaleLinear(),
          // padding makes lines the points up with the y axis ticks
          y = d3.scaleBand().paddingInner(1).paddingOuter(0.25),
-         y2 = d3.scaleBand().paddingInner(1).paddingOuter(0.25);
+         y2 = d3.scaleBand().paddingInner(1).paddingOuter(0.25),
+		 yEntropy = d3.scaleLinear(),
+		 yEntropy2 = d3.scaleLinear();
 	//=======================================================================
 
 
@@ -33,7 +35,7 @@ function parallelCoordinates() {
 	// used for lines in the focus pane
     var line = function(d) {
 	    return d3.line()
-		    // .curve(d3.curveStep)
+		    .curve(d3.curveMonotoneY)
 		    .x(function (d) { return x(d.position); })
 		    .y(function (d) { return y(d.bases); })
 		    (d.values);
@@ -47,15 +49,31 @@ function parallelCoordinates() {
 		    .y(function (d) { return y2(d.bases); })
 		    (d.values);
     };
+
+    // function to draw line of entropy data
+	var entropyLine = function(d, i) {
+		return d3.line()
+			.curve(d3.curveBasis)
+			.x(function (d, i) { return x(i + 1); })
+			.y(function (d) { return yEntropy(d); })
+			(d, i);
+	};
+
+	var entropyLine2 = function(d, i) {
+		return d3.line()
+			.curve(d3.curveBasis)
+			.x(function (d, i) { return x2(i + 1); })
+			.y(function (d) { return yEntropy2(d); })
+			(d, i);
+	};
+
 	//=======================================================================
 
 
 	//=======================================================================
 	// WHERE THE MAGIC HAPPENS!!
     function chart(selection){
-
         selection.each(function() {
-	        console.log(entropy);
 	        //========================================================================
 	        // INITIALISE VARIABLES AND SVG ELEMENTS
 
@@ -66,6 +84,8 @@ function parallelCoordinates() {
 	        x2.domain([1, seqLength]).range([0, width]);
 	        y.domain(domain).range([height, 0]);
 	        y2.domain(domain).range([height2, 0]);
+	        yEntropy.domain(d3.extent(entropy)).range([height, 0]);
+	        yEntropy2.domain(d3.extent(entropy)).range([height2, 0]);
 
 	        // colour each line based on the colourBy specified
 	        if (lineColourBy) {
@@ -152,6 +172,16 @@ function parallelCoordinates() {
 		        .attr("class", "grid")
 		        .call(make_y_gridlines().tickSize(-width).tickFormat(""));
 
+	        // add the entropy line
+	        focus.append('path')
+		        .datum(entropy)
+		        .attr('class', 'entropy')
+		        .attr('stroke', 'green')
+		        .attr('stroke-width', '2px')
+		        .attr('stroke-opacity', 0.5)
+		        .attr('fill', 'none')
+		        .attr('d', entropyLine);
+
 	        // container for the lines and associated elements
 	        var samples = focus.selectAll('.sample')
 		        .data(data)
@@ -179,6 +209,15 @@ function parallelCoordinates() {
 		        .call(brush)
 		        .call(brush.move, x.range());
 
+	        // add the entropy line
+	        context.append('path')
+		        .datum(entropy)
+		        .attr('class', 'entropy')
+		        .attr('stroke', 'green')
+		        .attr('stroke-width', '3px')
+		        .attr('fill', 'none')
+		        .attr('d', entropyLine2);
+
 	        var samples2 = context.selectAll('.sample')
 		        .data(data)
 	          .enter().append('g')
@@ -186,7 +225,7 @@ function parallelCoordinates() {
 
 	        // add lines
 	        samples2.append('path')
-		        .attr('class', 'line')
+		        .attr('class', 'context line')
 		        .attr('d', line2)
 		        .style('stroke', colour || 'steelblue');
 	        //========================================================================
@@ -199,6 +238,7 @@ function parallelCoordinates() {
 		        var s = d3.event.selection || x2.range();
 		        x.domain(s.map(x2.invert, x2));
 		        focus.selectAll('.line').attr('d', line);
+		        focus.selectAll('.entropy').attr('d', entropyLine);
 		        focus.select('.x.axis.top').call(xAxisTop);
 		        focus.select('.x.axis.bottom').call(xAxisBottom);
 		        svg.select('.zoom').call(zoom.transform, d3.zoomIdentity
@@ -211,6 +251,7 @@ function parallelCoordinates() {
 		        var t = d3.event.transform;
 		        x.domain(t.rescaleX(x2).domain());
 		        focus.selectAll('.line').attr('d', line);
+		        focus.selectAll('.entropy').attr('d', entropyLine);
 		        focus.select('.x.axis.top').call(xAxisTop);
 		        focus.select('.x.axis.bottom').call(xAxisBottom);
 		        context.select('.brush').call(brush.move, x.range().map(t.invertX, t));
@@ -334,10 +375,10 @@ function parallelCoordinates() {
 		    entropy = [],
 		    result  = [];
 		data.forEach(tally); // get counts for each sample
-		entropy.forEach(function(d, i) { result[i] = sumEntropy(Object.values(d), N); });
+		entropy.forEach(function(d, i) { result[i - 1] = sumEntropy(Object.values(d), N); });
 		return result;
 
-		function tally(obj, idx) {
+		function tally(obj) {
 			obj.values.forEach(iter) // get counts for each position in sample
 		}
 
