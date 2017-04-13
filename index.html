@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>D3 Template</title>
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <!--<script src="d3.parcoords.js"></script>-->
+    <!--<link rel="stylesheet" type="text/css" href="d3.parcoords.css">-->
+    <link rel="stylesheet" href="index.css">
+    <script src="index.js"></script>
+</head>
+<body>
+
+
+<div id="chart"></div>
+
+
+<script>
+    const sequence = "sequence";
+    const sampleID = "sampleID";
+
+    // colouring for MIC
+    var RdYlBu    = [
+	        "#313695", "#4575b4", "#74add1", "#abd9e9", "#e0f3f8", "#ffffbf",
+	        "#fee090", "#fdae61", "#f46d43", "#d73027", "#a50026"
+        ],
+        micDomain = [
+	        0.125, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0
+        ];
+
+	d3.tsv('data2.tsv', splitSeq, function(error, data) {
+		if (error) throw error;
+
+
+		// parse the data into the required data structure
+		parser(data, function(data, mapping) {
+
+			var pc = parallelCoordinates()
+                .data(data)
+                .mapping(mapping)
+                .height(500)
+                .width(960)
+                .sequence("sequence")
+                .sampleID("sampleID")
+				.lineColourBy('MIC')
+				.lineColourScale(micDomain, RdYlBu);
+
+			d3.select('#chart')
+				.call(pc);
+        });
+
+    });
+
+	// small row function that just splits each sample's sequence into an array
+	function splitSeq(data) {
+		data[sequence] = data[sequence].split('');
+        return data;
+    }
+
+    function parser(data, callback) {
+		var mapping = {}; // hold mapping from sampleID to MIC etc.
+		var rows = []; // this will hold the new data structure
+        var columns = ["position"];
+        // initialise the new data structure with objects for each position in the sequence
+		for (var i = 0; i < Object.keys(data[0][sequence]).length; i++) {
+			rows.push({ position: i + 1 });
+        }
+
+        // loop through each current sample's sequence
+		data.forEach(function(obj) {
+			var id = obj[sampleID];
+			var seq = obj[sequence];
+			columns.push(id);
+			mapping[id] = {
+				sequence: seq.join(''), // store the sample's sequence as a string for mapping
+                MIC: obj.MIC
+            };
+
+			// loop through each base in sequence and add it to the corresponding position in rows
+			seq.forEach(function(base, i) {
+				rows[i][id] = base;
+            });
+
+        });
+		rows.columns = columns;
+
+		// final nesting
+		rows =  rows.columns.slice(1).map(function(id) {
+		    return {
+			    id: id,
+			    values: rows.map(function(d) {
+				    return {position: d.position, bases: d[id]};
+			    })
+		    };
+	    });
+
+        callback(rows, mapping);
+    }
+
+</script>
+
+</body>
+</html>

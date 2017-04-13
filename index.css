@@ -1,0 +1,47 @@
+/*axis font size*/
+.x.axis {
+    font-size: .8em;
+}
+
+.axis {
+    stroke: #222;
+}
+
+.x.axis.top {
+    stroke-opacity: 0.2;
+    stroke: #222;
+    stroke-dasharray: 5 5;
+}
+
+/*make the y axes' text bold*/
+.y.axis {
+    font-size: 1em;
+    font-weight: bold;
+}
+
+/*styling for the lines representing the sequence for each sample*/
+.line {
+    fill: none;
+    stroke-width: 3px;
+    stroke-opacity: 0.2;
+    shape-rendering: geometricPrecision;
+    clip-path: url(#clip);
+}
+
+/*=============================*/
+/*styling for grid lines*/
+.grid line {
+    stroke: #222;
+    stroke-opacity: 0.3;
+    shape-rendering: crispEdges;
+}
+.grid path {
+    stroke-width: 0;
+}
+/*=============================*/
+
+.zoom {
+    cursor: move;
+    fill: none;
+    pointer-events: all;
+}
