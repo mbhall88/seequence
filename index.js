@@ -21,19 +21,19 @@ function parallelCoordinates() {
 
 	//=======================================================================
 	// SCALES FOR THE AXES - 2 indicates use for context pane
-     var xTop = d3.scaleLinear(),
-         xBottom = d3.scaleLinear(),
+     var xTop = d3.scaleLinear(), // top axis on the sequence pane
+         xBottom = d3.scaleLinear(), // main x axis
          // padding makes lines the points up with the y axis ticks
          yTop = d3.scaleBand().paddingInner(1).paddingOuter(0.25),
          yBottom = d3.scaleBand().paddingInner(1).paddingOuter(0.25),
-		 yEntropy = d3.scaleLinear(),
-		 yEntropyBottom = d3.scaleLinear();
+		 yEntropy = d3.scaleLinear(), // y axis for the entropy pane
+		 yEntropyBottom = d3.scaleLinear(); // y axis for the entropy line in context pane
 	//=======================================================================
 
 
 	//=======================================================================
 	// FUNCTIONS TO CALCULATE LINES
-	// used for lines in the focus pane
+	// used for lines in the sequence pane
     var line = function(d) {
 	    return d3.line()
 		    .curve(d3.curveMonotoneY)
@@ -42,7 +42,7 @@ function parallelCoordinates() {
 		    (d.values);
     };
 
-    // used for lines in the context pane
+    // used for sequence lines in the context pane
     var lineBottom = function(d) {
 	    return d3.line()
 		    // .curve(d3.curveStep)
@@ -51,7 +51,7 @@ function parallelCoordinates() {
 		    (d.values);
     };
 
-    // function to draw line of entropy data
+    // draw line of entropy data in entropy pane
 	var entropyLine = function(d, i) {
 		return d3.line()
 			.curve(d3.curveBasis)
@@ -60,6 +60,7 @@ function parallelCoordinates() {
 			(d, i);
 	};
 
+	// draw entropy line in context pane
 	var entropyLineBottom = function(d, i) {
 		return d3.line()
 			.curve(d3.curveBasis)
@@ -67,20 +68,20 @@ function parallelCoordinates() {
 			.y(function (d) { return yEntropyBottom(d); })
 			(d, i);
 	};
-
 	//=======================================================================
 
 
 	//=======================================================================
 	// WHERE THE MAGIC HAPPENS!!
     function chart(selection){
+
         selection.each(function() {
 	        //========================================================================
 	        // INITIALISE VARIABLES AND SVG ELEMENTS
 
 	        var heightBottom   = totalHeight - marginBottom.top - marginBottom.bottom, // height for context pane
-	            heightMiddle   = totalHeight - marginMiddle.top - marginMiddle.bottom,
-	            focusHeight    = totalHeight - marginTop.top - marginMiddle.bottom,
+	            heightMiddle   = totalHeight - marginMiddle.top - marginMiddle.bottom, // height for entropy pane
+	            focusHeight    = totalHeight - marginTop.top - marginMiddle.bottom, // height for entropy pane + sequence pane
 	            seqLength      = data[0].values.length;
 
 	        xTop.domain([1, seqLength]).range([0, width]);
@@ -142,8 +143,11 @@ function parallelCoordinates() {
 	        //========================================================================
 
 
+	        //========================================================================
+	        // FOCUS PANES
+
             //========================================================================
-	        // ADDING ELEMENTS TO FOCUS PANE
+	        // ADDING AXES
 
 	        // defining the axes
 	        // xAxisTop will draw vertical lines that stay aligned with the plot when panning
@@ -195,23 +199,11 @@ function parallelCoordinates() {
 	        entropyPane.append("g")
 		        .attr("class", "grid")
 		        .call(make_y_gridlines(yEntropy).tickSize(-width).tickFormat(""));
-
-	        // var entropyContainer = entropyPane.selectAll('.entropyContainer')
-				// .datum(entropy)
-			 //  .enter().append('path')
-				// .attr('class', 'entropyContainer')
-				// .attr('d', entropyLine);
-	        //
-	        // entropyContainer.append('path')
-		     //    .attr('class', 'entropy')
-		     //    .attr('d', entropyLine)
-		     //    .attr('stroke', 'green')
-		     //    .attr('stroke-width', '2px')
-		     //    .attr('stroke-opacity', 0.7)
-		     //    .attr('fill', 'none');
+	        //========================================================================
 
 
-
+	        //========================================================================
+			// DRAW LINES IN FOCUS PANES
 	        // add the entropy line
 	        entropyPane.append('path')
 		        .datum(entropy)
@@ -222,7 +214,7 @@ function parallelCoordinates() {
 		        .attr('fill', 'none')
 		        .attr('d', entropyLine);
 
-	        // container for the lines and associated elements
+	        // container for the sequence lines and associated elements
 	        var samples = sequencePane.selectAll('.sample')
 		        .data(data)
 	          .enter().append('g')
@@ -231,12 +223,16 @@ function parallelCoordinates() {
 	        // add lines
 	        samples.append('path')
 		        .attr('class', 'line')
+		        .attr('stroke-opacity', 0.15)
 		        .attr('d', line)
 		        .style('stroke', colour || 'steelblue');
 	        //========================================================================
 
 	        //========================================================================
-	        // ADDING CONTEXT PANES
+
+
+	        //========================================================================
+	        // ADDING CONTEXT PANE
 
 	        // add x axis to focus
 	        context.append('g')
